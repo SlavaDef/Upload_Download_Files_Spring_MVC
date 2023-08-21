@@ -1,0 +1,42 @@
+WORK WITH H2
+==================================================================================================================================
+CREATE TABLE simple_boolean (val boolean); - создали булевскую таблицу с одной колонкой val
+==================================================================================================================================
+SELECT val FROM simple_boolean; - перевірити чи є записи в колонці val (поки нема) 
+==================================================================================================================================
+INSERT INTO simple_boolean VALUES (true),(false); -- додати два значеннч типу (true),(false)
+==================================================================================================================================
+CREATE TABLE money (name VARCHAR(100) PRIMARY KEY, amount NUMERIC(10,2) ); 
+-- тейбл money максимум 100 символів, name буде PRIMARY KEY отже буде ключем
+NUMERIC приймає два значення 10 == скільки знаків до коми, 2 == після коми
+ 
+INSERT INTO money VALUES ('Elon Muck',1000.25);-- додати PRIMARY KEY==Elon Muck, NUMERIC == 1000.25
+INSERT INTO money VALUES ('Jon Snoy',999.55);-- додати PRIMARY KEY==Jon Snoy, NUMERIC == 999.55
+
+SELECT name,amount FROM money;-- вибрати з таблиці money імя та amount
+SELECT*FROM money;-- вибрати всі поля з таблиці 
+===================================================================================================================================
+CREATE TABLE birthday (name VARCHAR(100),  birthday DATE PRIMARY KEY);
+INSERT INTO birthday VALUES ('Sonia', '1995-05-06');
+SELECT*FROM birthday; -- вибор усіх стовпів з таблиці
+SELECT name FROM birthday; -- вибор імен з таблиці
+SELECT birthday FROM birthday; -- вибір всіх дат з табли
+===================================================================================================================================
+CREATE TABLE event (name VARCHAR(50) PRIMARY KEY, start_et TIMESTAMP, finish_at TIMESTAMP);
+INSERT INTO event VALUES ('Demo Course', '2023-04-17T19:30:00','2023-04-17T21:30:00'); -- назва час коли починається і час коли зак
+INSERT INTO event VALUES ('Java core', '2023-04-17T18:30:00','2023-04-17T22:30:00');
+INSERT INTO event VALUES ('Java dev', '2023-04-17T18:30:00','2023-08-17T22:30:00');
+SELECT*FROM event;
+===================================================================================================================================
+CREATE TABLE notebook(name VARCHAR(100) PRIMARY KEY, price NUMERIC(10,2), config JSON);
+INSERT INTO notebook VALUES('Lenovo',100500,'{"country":"CHINA","NO":"XX1020"}'); -- валідний JSON
+SELECT*FROM notebook;
+ALTER TABLE notebook ADD COLUMN (sold BOOLEAN DEFAULT false); -- добавили колонку sold в таблицю notebook
+UPDATE notebook SET sold=true; -- обновлюємо значення колонки sold на true
+ALTER TABLE notebook ALTER COLUMN sold INT; -- поміняли тип колонки на INT
+SELECT price, sold FROM notebook; -- вибрати конкретні стовпці з таблиці
+SELECT price, sold FROM notebook WHERE sold=1 AND price>1000 AND name='Lenovo'; -- стовпці з довгою умовою
+SELECT name,price, sold FROM notebook WHERE sold=1 AND price>1000 AND name='Lenovo';
+===================================================================================================================================
+
+

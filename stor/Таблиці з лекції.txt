@@ -1,0 +1,232 @@
+========================================================================================================
+1. Перша таблиця
+
+CREATE TABLE project (    -- створення таблиці з імям project
+
+id IDENTITY PRIMARY KEY,   --IDENTITY индефікатор +1, PRIMARY KEY - головний стовп
+name VARCHAR(100), -- у стовбця name маkc длинна 100 символів
+department_id BIGINT   -- як би великий INT влізе набагато більше в  IDENTITY максимум 2 лярда 
+
+);
+===========================================================================================================
+2. Друга таблиця
+
+CREATE TABLE department (
+id IDENTITY PRIMARY KEY,
+name VARCHAR(200),
+description VARCHAR(150)
+
+);
+============================================================================================================
+3. Звязок між таблицями
+
+тепер додаємо звязок між таблицями,  іншими словами обмеження
+--fk інший ключ, CONSTRAINT - обмеження, REFERENCES - силка на яку таблицю
+
+ALTER TABLE project -- змінити таблицю project
+ADD CONSTRAINT department_id_fk -- добавити нове обмеженння сутність баз данних
+FOREIGN KEY(department_id) -- зовнішний ключ в таблиці department відносно цієї колонки (id IDENTITY PRIMARY KEY)
+REFERENCES department(id); --  силка на таблицю department з полем id
+
+SHOW COLUMNS FROM project; -- дивитися колонки
+===============================================================================================================
+4. модифікація звязка
+
+змінюємо таблицю щоб починався відрахунок з 1 а не з 0
+
+ALTER TABLE project
+ALTER COLUMN department_id BIGINT NOT NULL;    
+================================================================================================================
+5. Третя таблиця
+
+CREATE TABLE worker (
+id IDENTITY PRIMARY KEY,
+first_name VARCHAR(100),
+last_name VARCHAR(100)
+
+);
+==================================================================================================================
+6. Четверта таблиця + звязок з другою
+
+CREATE TABLE department_worker (
+worker_id BIGINT NOT NULL, -- перша колонка, зовнішний ключ для таблиці worker
+department_id BIGINT NOT NULL, -- друга колонка, зовнішний ключ для таблиці department  
+PRIMARY KEY (worker_id, department_id), -- комбінація двох колонок первинного ключа в межах таблиці ця комбінація має бути унікальна
+FOREIGN KEY (worker_id) REFERENCES worker(id),
+FOREIGN KEY (department_id) REFERENCES department(id)
+);
+==========================================================================================================================
+7. Пята таблиця
+
+CREATE TABLE worker_details (
+worker_id BIGINT PRIMARY KEY,
+address VARCHAR(100),
+sex VARCHAR(10),
+FOREIGN KEY (worker_id) REFERENCES worker(id),
+
+);
+===========================================================================================================================
+вводимо обмеження для 7 таблиці
+
+ALTER TABLE worker_details -- фіксимо таблицю worker_details
+ADD CONSTRAINT sex_enum_values -- додаемо обмеження з таким то імям sex_enum_values
+CHECK (sex IN ('male','female','unknown')); -- і це обмеження перевіряє що значення поля sex буде завжди чи male чи female чи unknown
+
+забули про null убираємо його
+
+ALTER TABLE worker_details
+ALTER COLUMN sex VARCHAR(10) NOT NULL;
+=============================================================================================================================
+заповнюємо таблицю worker
+
+оскылькі поле id автоінкрімент його заповнювати не треба
+INSERT INTO worker(first_name,last_name) VALUES
+('Jon', 'Snow'),
+('Kate', 'Frost'),
+('Adam', 'Sendler'),
+('Sidni', 'Kroford');
+
+================================================================================================================================
+
+заповнюємо таблицю worker_details
+
+INSERT INTO worker_details(worker_id,address,sex) VALUES
+(1,'Mexico','male');
+
+===============================================================================================================================
+заповнюємо таблицю department
+id - генерується автоматом
+INSERT INTO department (name, description) VALUES
+('Air defense', 'another department'),
+('Woter defense', 'the best department in the word'),
+('Ramdom defense', 'Defens nothing');
+===============================================================================================================================
+заповнюємо таблицю department_worker
+INSERT INTO department_worker (worker_id, department_id) VALUES
+(1,2),
+(1,3),
+(2,3),
+(3,1);
+===============================================================================================================================
+заповнюємо таблицю project
+
+INSERT INTO project (name, department_id) VALUES
+('Cold Water',1),
+('Hot Water',2),
+('Rendom Water',2),
+('Forest safe',1);
+
+===============================================================================================================================
+Отримуємо інфу
+
+1. Отримати список всіх працівників - чоловіків
+SELECT worker_id
+FROM worker_details
+WHERE sex = 'male'; -- видасть просто 1, модернізуємо запит
+
+ 
+SELECT* FROM worker
+WHERE id IN (
+   SELECT worker_id
+   FROM worker_details
+   WHERE sex = 'male') ; -- отримали одну людину?
+
+чи за допомогою JOIN - склеювання таблиць
+
+завдання додати додаткову інфу до тоблиці про людину
+SELECT* FROM worker -- просто всі люди в таблиці
+JOIN worker_details ON -- обьеднати з таблицею worker_details і умова
+worker_id = worker_details.worker_id;
+
+SELECT* FROM worker -- просто всі люди в таблиці
+LEFT JOIN worker_details ON -- LEFT - залише все в першій таблиці іншиму присвоє нул
+worker_id = worker_details.worker_id;
+
+отримати список працівників що працюють у окремому відділі
+вивести відділ з максимальною кількістю працівників
+
+SELECT * FROM worker 
+JOIN department_worker ON
+worker.id = department_worker.worker_id --  на цьому єтапв виведе всі але потрібна конкретна умова
+WHERE department_id = 3; 
+
+чи так 
+
+SELECT worker.* FROM worker 
+JOIN department_worker ON
+worker.id = department_worker.worker_id
+WHERE department_id = 3; 
+
+вивести відділ з максимальною кількістю працівників
+спочатку просто виведемо таблицю
+SELECT * FROM department_worker;
+чи SELECT department_id,worker_id
+FROM department_worker;
+GROUP BY worker_id   -- сгрупуй по worker_id виведе просто унікальні числа
+
+SELECT department_id, count(worker_id)
+FROM department_worker
+GROUP BY department_id -- далі сортуємо
+ORDER BY count(worker_id) DESC
+LIMIT 1; -- обрізаємо бо беремо один запис
+
+SELECT * 
+FROM department 
+WHERE id IN (
+   SELECT department_id
+   FROM department_worker
+   GROUP BY department_id 
+   ORDER BY count(worker_id) DESC
+   LIMIT 1
+);   -- данна реалізація не врахує ситуацію коли є декілька відділів з однаковою кількістю трудяг
+
+задача вибрати всі відділи де кількість працівників найбільша
+
+SELECT* FROM department
+WHERE id IN (
+SELECT department_id
+FROM department_worker
+GROUP BY department_id 
+HAVING count(worker_id) IN(
+  SELECT count(worker_id)
+  FROM department_worker
+  GROUP BY department_id
+  ORDER BY count(worker_id) DESC
+  LIMIT 1
+)
+);
+
+вибрати людей які не працюють у жожному відділі або працюють у двох і більше відділах
+буде два запити спочатку (не працюють у жожному відділі) потім (працюють у двох і більше відділах) потім обеднати результати
+
+SELECT 
+   FROM department_worker
+   GROUP BY department_id 
+
+-- вибираємо усіх працівників які ніде не працюють
+
+SELECT*, 'FREE' -- + додали в колонку запис навпроти вільного робітника 
+FROM worker
+WHERE id NOT IN ( -- далі вкладений запит
+SELECT worker_id FROM department_worker);
+
+UNION -- буквально обьеднуємо ці два запити (крапка з комою в першій -)
+
+-- працівники які працюють в 2+ віділах
+SELECT *,'2+ departmens' 
+FROM worker
+WHERE id IN (
+   SELECT worker_id
+   FROM department_worker
+   GROUP BY worker_id 
+   HAVING count(department_id) >=2-- обрізаємо данні 
+
+);
+
+ -- знайти всіх працівників у яких в імені є буква K в імені або призвищі
+
+SELECT *
+FROM worker; 
+WHERE LOWER(first_name) LIKE '%o%'  -- задаемо критерії пошуку % означає що до шукованого символу може бути нна кількість символів і після
+OR LOWER(last_name) LIKE '%o%'; -- LOWER аналог игнорекейс
+    
